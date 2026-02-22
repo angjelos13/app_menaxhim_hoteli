@@ -43,10 +43,10 @@ interface Rel {
 
 // ── Constants ──────────────────────────────────────────────────────────
 
-const SVG_W = 3800
-const SVG_H = 2800
+const SVG_W = 4800
+const SVG_H = 3600
 
-const DIAMOND_SIZE = 38
+const DIAMOND_SIZE = 52
 
 // Careful manual placement for a clean, spread-out Chen-notation diagram
 // Row 1: USER (top-left), ROOM (top-center), TABLE (top-right), SERVICE (far right)
@@ -64,7 +64,7 @@ const ENTITIES: Entity[] = [
       { name: "role" },
       { name: "isActive" },
     ],
-    x: 200, y: 200, w: 150, h: 56,
+    x: 200, y: 250, w: 210, h: 76,
     fill: "#dcfce7", stroke: "#16a34a",
     category: "People & Auth",
     attrSide: "left",
@@ -78,7 +78,7 @@ const ENTITIES: Entity[] = [
       { name: "email" },
       { name: "idCardNo" },
     ],
-    x: 200, y: 1050, w: 170, h: 56,
+    x: 200, y: 1350, w: 230, h: 76,
     fill: "#fef9c3", stroke: "#ca8a04",
     category: "People & Auth",
     attrSide: "left",
@@ -94,7 +94,7 @@ const ENTITIES: Entity[] = [
       { name: "pricePerNight" },
       { name: "status" },
     ],
-    x: 1100, y: 200, w: 140, h: 56,
+    x: 1400, y: 200, w: 200, h: 76,
     fill: "#dcfce7", stroke: "#16a34a",
     category: "Hotel Assets",
     attrSide: "top",
@@ -107,7 +107,7 @@ const ENTITIES: Entity[] = [
       { name: "capacity" },
       { name: "status" },
     ],
-    x: 1100, y: 1850, w: 140, h: 56,
+    x: 1400, y: 2400, w: 200, h: 76,
     fill: "#dcfce7", stroke: "#16a34a",
     category: "Hotel Assets",
     attrSide: "bottom",
@@ -128,7 +128,7 @@ const ENTITIES: Entity[] = [
       { name: "createdBy", fk: true },
       { name: "createdAt" },
     ],
-    x: 1050, y: 1000, w: 200, h: 56,
+    x: 1350, y: 1280, w: 280, h: 76,
     fill: "#dbeafe", stroke: "#2563eb",
     category: "Reservations",
     attrSide: "bottom",
@@ -146,7 +146,7 @@ const ENTITIES: Entity[] = [
       { name: "total" },
       { name: "status" },
     ],
-    x: 2050, y: 1000, w: 160, h: 56,
+    x: 2650, y: 1280, w: 220, h: 76,
     fill: "#fee2e2", stroke: "#dc2626",
     category: "Billing",
     attrSide: "top",
@@ -161,7 +161,7 @@ const ENTITIES: Entity[] = [
       { name: "paidAt" },
       { name: "status" },
     ],
-    x: 2050, y: 1850, w: 160, h: 56,
+    x: 2650, y: 2400, w: 220, h: 76,
     fill: "#fce7f3", stroke: "#db2777",
     category: "Billing",
     attrSide: "bottom",
@@ -176,7 +176,7 @@ const ENTITIES: Entity[] = [
       { name: "unitPrice" },
       { name: "category" },
     ],
-    x: 2950, y: 200, w: 150, h: 56,
+    x: 3750, y: 200, w: 210, h: 76,
     fill: "#ede9fe", stroke: "#7c3aed",
     category: "Services",
     attrSide: "right",
@@ -191,7 +191,7 @@ const ENTITIES: Entity[] = [
       { name: "dateTime" },
       { name: "totalPrice" },
     ],
-    x: 2900, y: 1000, w: 210, h: 56,
+    x: 3700, y: 1280, w: 280, h: 76,
     fill: "#ede9fe", stroke: "#7c3aed",
     category: "Services",
     attrSide: "right",
@@ -207,7 +207,7 @@ const ENTITIES: Entity[] = [
       { name: "quantityOnHand" },
       { name: "minThreshold" },
     ],
-    x: 2900, y: 1850, w: 210, h: 56,
+    x: 3700, y: 2400, w: 280, h: 76,
     fill: "#cffafe", stroke: "#0891b2",
     category: "Inventory",
     attrSide: "right",
@@ -223,7 +223,7 @@ const ENTITIES: Entity[] = [
       { name: "dateTime" },
       { name: "notes" },
     ],
-    x: 2900, y: 2400, w: 210, h: 56,
+    x: 3700, y: 3100, w: 280, h: 76,
     fill: "#cffafe", stroke: "#0891b2",
     category: "Inventory",
     attrSide: "right",
@@ -235,63 +235,63 @@ const RELATIONSHIPS: Rel[] = [
     id: "r1", from: "Customer", to: "Reservation",
     name: "MAKES",
     fromCard: "(1, 1)", toCard: "(0, N)",
-    diamondX: 660, diamondY: 1028,
+    diamondX: 830, diamondY: 1318,
   },
   {
     id: "r2", from: "Reservation", to: "Room",
     name: "BOOKS",
     fromCard: "(0, N)", toCard: "(0, 1)",
-    diamondX: 1170, diamondY: 620,
+    diamondX: 1500, diamondY: 760,
     note: "if type = Room",
   },
   {
     id: "r3", from: "Reservation", to: "Table",
     name: "RESERVES",
     fromCard: "(0, N)", toCard: "(0, 1)",
-    diamondX: 1170, diamondY: 1460,
+    diamondX: 1500, diamondY: 1880,
     note: "if type = Table",
   },
   {
     id: "r4", from: "User", to: "Reservation",
     name: "CREATES",
     fromCard: "(1, 1)", toCard: "(0, N)",
-    diamondX: 660, diamondY: 580,
+    diamondX: 830, diamondY: 760,
   },
   {
     id: "r5", from: "Reservation", to: "Invoice",
     name: "GENERATES",
     fromCard: "(1, 1)", toCard: "(0, 1)",
-    diamondX: 1600, diamondY: 1028,
+    diamondX: 2080, diamondY: 1318,
   },
   {
     id: "r6", from: "Invoice", to: "Payment",
     name: "PAID_VIA",
     fromCard: "(1, 1)", toCard: "(0, N)",
-    diamondX: 2130, diamondY: 1460,
+    diamondX: 2760, diamondY: 1880,
   },
   {
     id: "r7", from: "Invoice", to: "ServiceUsage",
     name: "CONTAINS",
     fromCard: "(1, 1)", toCard: "(0, N)",
-    diamondX: 2600, diamondY: 1028,
+    diamondX: 3300, diamondY: 1318,
   },
   {
     id: "r8", from: "Service", to: "ServiceUsage",
     name: "USED_IN",
     fromCard: "(1, 1)", toCard: "(0, N)",
-    diamondX: 3005, diamondY: 620,
+    diamondX: 3855, diamondY: 760,
   },
   {
     id: "r9", from: "InventoryItem", to: "InventoryTransaction",
     name: "TRACKS",
     fromCard: "(1, 1)", toCard: "(0, N)",
-    diamondX: 3005, diamondY: 2150,
+    diamondX: 3840, diamondY: 2780,
   },
   {
     id: "r10", from: "User", to: "InventoryTransaction",
     name: "RECORDS",
     fromCard: "(1, 1)", toCard: "(0, N)",
-    diamondX: 560, diamondY: 2428,
+    diamondX: 700, diamondY: 3138,
   },
 ]
 
@@ -315,32 +315,32 @@ function attrOvalPositions(ent: Entity): { x: number; y: number; attr: Attr }[] 
   const count = attrs.length
   const results: { x: number; y: number; attr: Attr }[] = []
 
-  const spacing = 36
+  const spacing = 50
 
   if (attrSide === "left") {
     const totalH = (count - 1) * spacing
     const startY = cy - totalH / 2
     for (let i = 0; i < count; i++) {
-      results.push({ x: x - 130, y: startY + i * spacing, attr: attrs[i] })
+      results.push({ x: x - 170, y: startY + i * spacing, attr: attrs[i] })
     }
   } else if (attrSide === "right") {
     const totalH = (count - 1) * spacing
     const startY = cy - totalH / 2
     for (let i = 0; i < count; i++) {
-      results.push({ x: x + w + 130, y: startY + i * spacing, attr: attrs[i] })
+      results.push({ x: x + w + 170, y: startY + i * spacing, attr: attrs[i] })
     }
   } else if (attrSide === "top") {
-    const totalW = (count - 1) * 130
+    const totalW = (count - 1) * 165
     const startX = cx - totalW / 2
     for (let i = 0; i < count; i++) {
-      results.push({ x: startX + i * 130, y: y - 70, attr: attrs[i] })
+      results.push({ x: startX + i * 165, y: y - 90, attr: attrs[i] })
     }
   } else {
     // bottom
-    const totalW = (count - 1) * 130
+    const totalW = (count - 1) * 165
     const startX = cx - totalW / 2
     for (let i = 0; i < count; i++) {
-      results.push({ x: startX + i * 130, y: y + h + 70, attr: attrs[i] })
+      results.push({ x: startX + i * 165, y: y + h + 90, attr: attrs[i] })
     }
   }
 
@@ -376,8 +376,8 @@ function diamondEdge(dx: number, dy: number, tx: number, ty: number) {
 
 export default function ERDiagram() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [zoom, setZoom] = useState(0.42)
-  const [pan, setPan] = useState({ x: 60, y: 30 })
+  const [zoom, setZoom] = useState(0.34)
+  const [pan, setPan] = useState({ x: 40, y: 20 })
   const [dragging, setDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [highlighted, setHighlighted] = useState<string | null>(null)
@@ -415,8 +415,8 @@ export default function ERDiagram() {
   }, [])
 
   const resetView = useCallback(() => {
-    setZoom(0.42)
-    setPan({ x: 60, y: 30 })
+    setZoom(0.34)
+    setPan({ x: 40, y: 20 })
   }, [])
 
   // ── Download PNG ──
@@ -665,7 +665,7 @@ export default function ERDiagram() {
                 // Offset cardinality labels perpendicular to line
                 const fAngle = Math.atan2(dFromPt.y - fromPt.y, dFromPt.x - fromPt.x)
                 const tAngle = Math.atan2(dToPt.y - toPt.y, dToPt.x - toPt.x)
-                const off = 16
+                const off = 22
 
                 return (
                   <g
@@ -679,12 +679,12 @@ export default function ERDiagram() {
                     {/* Line from entity to diamond */}
                     <line
                       x1={fromPt.x} y1={fromPt.y} x2={dFromPt.x} y2={dFromPt.y}
-                      stroke={isHl ? "#2563eb" : "#64748b"} strokeWidth={isHl ? 2.5 : 1.5}
+                      stroke={isHl ? "#2563eb" : "#64748b"} strokeWidth={isHl ? 3 : 2}
                     />
                     {/* Line from diamond to entity */}
                     <line
                       x1={dToPt.x} y1={dToPt.y} x2={toPt.x} y2={toPt.y}
-                      stroke={isHl ? "#2563eb" : "#64748b"} strokeWidth={isHl ? 2.5 : 1.5}
+                      stroke={isHl ? "#2563eb" : "#64748b"} strokeWidth={isHl ? 3 : 2}
                     />
 
                     {/* Diamond (double border) */}
@@ -702,10 +702,10 @@ export default function ERDiagram() {
                         fill="white" stroke={isHl ? "#2563eb" : "#475569"} strokeWidth={isHl ? 1.5 : 0.8}
                       />
                       <text
-                        x={0} y={5}
+                        x={0} y={6}
                         textAnchor="middle"
                         fill={isHl ? "#2563eb" : "#1e293b"}
-                        fontSize="11"
+                        fontSize="14"
                         fontWeight="700"
                         fontFamily="sans-serif"
                       >
@@ -716,10 +716,10 @@ export default function ERDiagram() {
                     {/* Cardinality labels */}
                     <text
                       x={fromMidX + Math.sin(fAngle) * off}
-                      y={fromMidY - Math.cos(fAngle) * off + 4}
+                      y={fromMidY - Math.cos(fAngle) * off + 5}
                       textAnchor="middle"
                       fill={isHl ? "#2563eb" : "#1e293b"}
-                      fontSize="13"
+                      fontSize="16"
                       fontWeight="700"
                       fontFamily="sans-serif"
                     >
@@ -727,10 +727,10 @@ export default function ERDiagram() {
                     </text>
                     <text
                       x={toMidX + Math.sin(tAngle) * off}
-                      y={toMidY - Math.cos(tAngle) * off + 4}
+                      y={toMidY - Math.cos(tAngle) * off + 5}
                       textAnchor="middle"
                       fill={isHl ? "#2563eb" : "#1e293b"}
-                      fontSize="13"
+                      fontSize="16"
                       fontWeight="700"
                       fontFamily="sans-serif"
                     >
@@ -740,8 +740,8 @@ export default function ERDiagram() {
                     {/* Note (if present) */}
                     {rel.note && (
                       <text
-                        x={dx} y={dy + DIAMOND_SIZE + 18}
-                        textAnchor="middle" fill="#94a3b8" fontSize="10" fontStyle="italic" fontFamily="sans-serif"
+                        x={dx} y={dy + DIAMOND_SIZE + 24}
+                        textAnchor="middle" fill="#94a3b8" fontSize="13" fontStyle="italic" fontFamily="sans-serif"
                       >
                         {rel.note}
                       </text>
@@ -773,45 +773,45 @@ export default function ERDiagram() {
                         {/* Oval background */}
                         <ellipse
                           cx={x} cy={y}
-                          rx={Math.max(attr.name.length * 4.8, 45)}
-                          ry={15}
+                          rx={Math.max(attr.name.length * 6.5, 60)}
+                          ry={20}
                           fill="white"
                           stroke={attr.pk ? ent.stroke : "#94a3b8"}
-                          strokeWidth={attr.pk ? 1.5 : 1}
+                          strokeWidth={attr.pk ? 2 : 1.2}
                           filter="url(#chen-shadow)"
                         />
                         {/* Attribute text */}
                         <text
-                          x={x} y={y + 4}
+                          x={x} y={y + 5}
                           textAnchor="middle"
                           fill="#1e293b"
-                          fontSize="11"
+                          fontSize="15"
                           fontFamily="sans-serif"
-                          fontWeight={attr.pk || attr.fk ? "600" : "400"}
+                          fontWeight={attr.pk || attr.fk ? "700" : "400"}
                         >
                           {attr.name}
                         </text>
                         {/* PK dashed underline */}
                         {attr.pk && (
                           <line
-                            x1={x - attr.name.length * 3}
-                            y1={y + 9}
-                            x2={x + attr.name.length * 3}
-                            y2={y + 9}
+                            x1={x - attr.name.length * 4}
+                            y1={y + 12}
+                            x2={x + attr.name.length * 4}
+                            y2={y + 12}
                             stroke={ent.stroke}
-                            strokeWidth="1.2"
-                            strokeDasharray="4 2"
+                            strokeWidth="1.5"
+                            strokeDasharray="5 3"
                           />
                         )}
                         {/* FK indicator dot */}
                         {attr.fk && !attr.pk && (
                           <text
-                            x={x + Math.max(attr.name.length * 4.8, 45) + 8}
-                            y={y + 4}
+                            x={x + Math.max(attr.name.length * 6.5, 60) + 10}
+                            y={y + 5}
                             fill="#94a3b8"
-                            fontSize="9"
+                            fontSize="12"
                             fontFamily="sans-serif"
-                            fontWeight="600"
+                            fontWeight="700"
                           >
                             FK
                           </text>
@@ -823,21 +823,21 @@ export default function ERDiagram() {
                     <rect
                       x={ent.x} y={ent.y}
                       width={ent.w} height={ent.h}
-                      rx={3}
+                      rx={4}
                       fill={ent.fill}
                       stroke={ent.stroke}
-                      strokeWidth={isHl ? 3.5 : 2.5}
+                      strokeWidth={isHl ? 4.5 : 3}
                       filter="url(#chen-shadow)"
                     />
                     {/* Entity name */}
                     <text
-                      x={cx} y={cy + 5}
+                      x={cx} y={cy + 7}
                       textAnchor="middle"
                       fill={ent.stroke}
-                      fontSize="15"
+                      fontSize="20"
                       fontWeight="800"
                       fontFamily="sans-serif"
-                      letterSpacing="0.5"
+                      letterSpacing="0.8"
                     >
                       {ent.name}
                     </text>
