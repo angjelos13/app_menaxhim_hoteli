@@ -680,6 +680,17 @@ export function UseCaseDiagram() {
             >
               <Maximize2 className="size-4" />
             </Button>
+            <div className="mx-0.5 h-5 w-px bg-border" />
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={downloadAsPng}
+              aria-label="Download as PNG"
+            >
+              <Download className="size-4" />
+              PNG
+            </Button>
           </div>
         </div>
       </div>
