@@ -12,6 +12,7 @@ import {
   Users,
   Settings,
   ChevronDown,
+  Network,
 } from "lucide-react"
 import {
   Sidebar,
