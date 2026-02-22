@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
+import { ZoomIn, ZoomOut, Maximize2, Download } from "lucide-react"
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -176,6 +176,78 @@ export function UseCaseDiagram() {
   )
 
   const handlePointerUp = useCallback(() => setIsPanning(false), [])
+
+  const downloadAsPng = useCallback(() => {
+    const svgEl = containerRef.current?.querySelector("svg")
+    if (!svgEl) return
+
+    // Clone the SVG so we can set fixed dimensions for export
+    const clone = svgEl.cloneNode(true) as SVGSVGElement
+    clone.setAttribute("width", String(SVG_W))
+    clone.setAttribute("height", String(SVG_H))
+
+    // Reset the transform to show the full diagram
+    const gEl = clone.querySelector("g")
+    if (gEl) {
+      gEl.setAttribute("transform", "translate(0,0) scale(1)")
+    }
+
+    const serializer = new XMLSerializer()
+    const svgString = serializer.serializeToString(clone)
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" })
+    const url = URL.createObjectURL(svgBlob)
+
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.onload = () => {
+      // Render at 2x for crisp export
+      const exportScale = 2
+      const canvas = document.createElement("canvas")
+      canvas.width = SVG_W * exportScale
+      canvas.height = SVG_H * exportScale
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+
+      ctx.fillStyle = "#ffffff"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(exportScale, exportScale)
+      ctx.drawImage(img, 0, 0, SVG_W, SVG_H)
+
+      URL.revokeObjectURL(url)
+
+      const link = document.createElement("a")
+      link.download = "hotel-usecase-diagram.png"
+      link.href = canvas.toDataURL("image/png")
+      link.click()
+    }
+    img.src = url
+  }, [])
+
+  const downloadAsSvg = useCallback(() => {
+    const svgEl = containerRef.current?.querySelector("svg")
+    if (!svgEl) return
+
+    const clone = svgEl.cloneNode(true) as SVGSVGElement
+    clone.setAttribute("width", String(SVG_W))
+    clone.setAttribute("height", String(SVG_H))
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg")
+
+    const gEl = clone.querySelector("g")
+    if (gEl) {
+      gEl.setAttribute("transform", "translate(0,0) scale(1)")
+    }
+
+    const serializer = new XMLSerializer()
+    const svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + serializer.serializeToString(clone)
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement("a")
+    link.download = "hotel-usecase-diagram.svg"
+    link.href = url
+    link.click()
+    URL.revokeObjectURL(url)
+  }, [])
 
   function isRelHighlighted(rel: Relationship) {
     if (selectedRelType !== "all" && rel.type !== selectedRelType) return false
