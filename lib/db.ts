@@ -1,3 +1,4 @@
+
 import sql from "mssql"
 
 const config: sql.config = {
@@ -28,3 +29,24 @@ export async function getDb(): Promise<sql.ConnectionPool> {
 }
 
 export { sql }
+import sql from "mssql";
+
+const config: sql.config = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  server: process.env.DB_SERVER || "DESKTOP-CD25SCT",
+  database: process.env.DB_NAME || "HotelManagementDB",
+  port: 1433,
+  options: {
+    encrypt: false,
+    trustServerCertificate: true,
+  },
+};
+
+let poolPromise: Promise<sql.ConnectionPool> | null = null;
+
+export function getPool() {
+  if (!poolPromise) poolPromise = new sql.ConnectionPool(config).connect();
+  return poolPromise;
+}
+(Initial commit)

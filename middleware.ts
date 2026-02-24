@@ -6,6 +6,7 @@ const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || "hotel-desk-d
 const PUBLIC_PATHS = [
   "/api/auth/login",
   "/api/auth/logout",
+  "/api/db-test",  
   "/login",
   "/diagram",
   "/activity-diagram",
