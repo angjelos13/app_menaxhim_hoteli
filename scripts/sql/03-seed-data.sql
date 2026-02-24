@@ -10,17 +10,18 @@ GO
 
 -- ============================================================
 -- 1. Users (5 staff members)
--- Passwords are bcrypt-style placeholders - replace in production
+-- Passwords use SHA-256 hashes. Default password for all users: "hotel123"
+-- SHA-256 of "hotel123" = 5e844e50b88234e78e30be35e15a6dce96f0a0b2dce6405a7b2948735f0dcf4c
 -- ============================================================
 SET IDENTITY_INSERT [hotel].[Users] ON;
 
 INSERT INTO [hotel].[Users] (userId, username, passwordHash, role, isActive, createdAt)
 VALUES
-    (1, 'ana.martinez',    '$2b$10$placeholder_hash_ana',    'Administrator',  1, '2025-01-15 09:00:00'),
-    (2, 'carlos.ruiz',     '$2b$10$placeholder_hash_carlos', 'Receptionist',   1, '2025-02-01 09:00:00'),
-    (3, 'laura.gomez',     '$2b$10$placeholder_hash_laura',  'Receptionist',   1, '2025-02-10 09:00:00'),
-    (4, 'pedro.sanchez',   '$2b$10$placeholder_hash_pedro',  'Operational',    1, '2025-03-01 09:00:00'),
-    (5, 'isabel.torres',   '$2b$10$placeholder_hash_isabel', 'Operational',    0, '2025-03-15 09:00:00');
+    (1, 'ana.martinez',    '5e844e50b88234e78e30be35e15a6dce96f0a0b2dce6405a7b2948735f0dcf4c', 'Administrator',  1, '2025-01-15 09:00:00'),
+    (2, 'carlos.ruiz',     '5e844e50b88234e78e30be35e15a6dce96f0a0b2dce6405a7b2948735f0dcf4c', 'Receptionist',   1, '2025-02-01 09:00:00'),
+    (3, 'laura.gomez',     '5e844e50b88234e78e30be35e15a6dce96f0a0b2dce6405a7b2948735f0dcf4c', 'Receptionist',   1, '2025-02-10 09:00:00'),
+    (4, 'pedro.sanchez',   '5e844e50b88234e78e30be35e15a6dce96f0a0b2dce6405a7b2948735f0dcf4c', 'Operational',    1, '2025-03-01 09:00:00'),
+    (5, 'isabel.torres',   '5e844e50b88234e78e30be35e15a6dce96f0a0b2dce6405a7b2948735f0dcf4c', 'Operational',    0, '2025-03-15 09:00:00');
 
 SET IDENTITY_INSERT [hotel].[Users] OFF;
 GO

@@ -12,6 +12,7 @@ import {
   Users,
   Settings,
   ChevronDown,
+  LogOut,
 } from "lucide-react"
 import {
   Sidebar,
@@ -31,6 +32,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
 
 const receptionistItems = [
   { title: "Dashboard", icon: LayoutDashboard, id: "dashboard" },
@@ -50,6 +53,24 @@ const adminItems = [
   { title: "Settings", icon: Settings, id: "settings" },
 ]
 
+function getSectionsForRole(role: string | undefined) {
+  const sections: { label: string; items: typeof receptionistItems }[] = []
+  if (!role) return sections
+
+  const r = role.toLowerCase()
+  if (r === "administrator" || r === "receptionist") {
+    sections.push({ label: "Receptionist", items: receptionistItems })
+  }
+  if (r === "administrator" || r === "operational") {
+    sections.push({ label: "Operations", items: operationsItems })
+  }
+  if (r === "administrator") {
+    sections.push({ label: "Administrator", items: adminItems })
+  }
+
+  return sections
+}
+
 export function AppSidebar({
   activeSection,
   onNavigate,
@@ -57,6 +78,9 @@ export function AppSidebar({
   activeSection: string
   onNavigate: (section: string) => void
 }) {
+  const { user, logout } = useAuth()
+  const sections = getSectionsForRole(user?.role)
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
@@ -78,107 +102,62 @@ export function AppSidebar({
       <SidebarSeparator />
 
       <SidebarContent>
-        <Collapsible defaultOpen className="group/collapsible">
-          <SidebarGroup>
-            <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="flex w-full items-center justify-between">
-                Receptionist
-                <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-              </CollapsibleTrigger>
-            </SidebarGroupLabel>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {receptionistItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={activeSection === item.id}
-                        onClick={() => onNavigate(item.id)}
-                        tooltip={item.title}
-                      >
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
-
-        <Collapsible defaultOpen className="group/collapsible">
-          <SidebarGroup>
-            <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="flex w-full items-center justify-between">
-                Operations
-                <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-              </CollapsibleTrigger>
-            </SidebarGroupLabel>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {operationsItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={activeSection === item.id}
-                        onClick={() => onNavigate(item.id)}
-                        tooltip={item.title}
-                      >
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
-
-        <Collapsible defaultOpen className="group/collapsible">
-          <SidebarGroup>
-            <SidebarGroupLabel asChild>
-              <CollapsibleTrigger className="flex w-full items-center justify-between">
-                Administrator
-                <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-              </CollapsibleTrigger>
-            </SidebarGroupLabel>
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {adminItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={activeSection === item.id}
-                        onClick={() => onNavigate(item.id)}
-                        tooltip={item.title}
-                      >
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+        {sections.map((section) => (
+          <Collapsible key={section.label} defaultOpen className="group/collapsible">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="flex w-full items-center justify-between">
+                  {section.label}
+                  <ChevronDown className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {section.items.map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton
+                          isActive={activeSection === item.id}
+                          onClick={() => onNavigate(item.id)}
+                          tooltip={item.title}
+                        >
+                          <item.icon className="size-4" />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground text-xs font-medium">
-            AM
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground text-xs font-medium">
+              {user?.username?.slice(0, 2).toUpperCase() ?? "??"}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-sidebar-foreground">
+                {user?.username ?? "Not logged in"}
+              </span>
+              <span className="text-xs text-sidebar-foreground/60 capitalize">
+                {user?.role ?? ""}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-xs font-medium text-sidebar-foreground">
-              Ana Martinez
-            </span>
-            <span className="text-xs text-sidebar-foreground/60">
-              Administrator
-            </span>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 text-sidebar-foreground/60 hover:text-sidebar-foreground"
+            onClick={logout}
+            aria-label="Log out"
+          >
+            <LogOut className="size-3.5" />
+          </Button>
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Plus,
-  Pencil,
   BedDouble,
   UtensilsCrossed,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,81 +23,95 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  rooms as initialRooms,
-  tables as initialTables,
-  availableServices,
-  type Room,
-  type RestaurantTable,
-} from "@/lib/hotel-data"
+import { apiFetch } from "@/lib/api"
+
+interface RoomRow { roomId: number; roomNumber: string; type: string; floor: number; pricePerNight: number; status: string; capacity: number }
+interface TableRow2 { tableId: number; tableNumber: string; capacity: number; status: string; location: string }
+interface ServiceRow { serviceId: number; name: string; unitPrice: number; category: string }
 
 export function SettingsSection() {
-  const [allRooms, setAllRooms] = useState<Room[]>(initialRooms)
-  const [allTables, setAllTables] = useState<RestaurantTable[]>(initialTables)
+  const [rooms, setRooms] = useState<RoomRow[]>([])
+  const [tables, setTables] = useState<TableRow2[]>([])
+  const [services, setServices] = useState<ServiceRow[]>([])
+  const [loading, setLoading] = useState(true)
   const [roomDialogOpen, setRoomDialogOpen] = useState(false)
   const [tableDialogOpen, setTableDialogOpen] = useState(false)
 
-  const [newRoom, setNewRoom] = useState({
-    number: "",
-    type: "single" as Room["type"],
-    floor: "1",
-    price: "",
-    capacity: "1",
-  })
+  const [newRoom, setNewRoom] = useState({ roomNumber: "", type: "Single", floor: "1", pricePerNight: "", capacity: "1" })
+  const [newTable, setNewTable] = useState({ tableNumber: "", capacity: "2", location: "Indoor" })
 
-  const [newTable, setNewTable] = useState({
-    number: "",
-    seats: "2",
-    location: "indoor" as RestaurantTable["location"],
-  })
-
-  function handleAddRoom() {
-    const room: Room = {
-      id: `r-${Date.now()}`,
-      number: newRoom.number,
-      type: newRoom.type,
-      floor: parseInt(newRoom.floor),
-      pricePerNight: parseFloat(newRoom.price),
-      status: "available",
-      capacity: parseInt(newRoom.capacity),
-    }
-    setAllRooms((prev) => [...prev, room])
-    setRoomDialogOpen(false)
-    setNewRoom({ number: "", type: "single", floor: "1", price: "", capacity: "1" })
+  async function load() {
+    setLoading(true)
+    try {
+      const [r, t, s] = await Promise.all([
+        apiFetch("/api/rooms"),
+        apiFetch("/api/tables"),
+        apiFetch("/api/services"),
+      ])
+      setRooms(r)
+      setTables(t)
+      setServices(s)
+    } catch { /* empty */ }
+    setLoading(false)
   }
 
-  function handleAddTable() {
-    const table: RestaurantTable = {
-      id: `t-${Date.now()}`,
-      number: newTable.number,
-      seats: parseInt(newTable.seats),
-      location: newTable.location,
-      status: "available",
-    }
-    setAllTables((prev) => [...prev, table])
-    setTableDialogOpen(false)
-    setNewTable({ number: "", seats: "2", location: "indoor" })
+  useEffect(() => { load() }, [])
+
+  async function handleAddRoom() {
+    try {
+      await apiFetch("/api/rooms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomNumber: newRoom.roomNumber,
+          type: newRoom.type,
+          floor: parseInt(newRoom.floor),
+          pricePerNight: parseFloat(newRoom.pricePerNight),
+          capacity: parseInt(newRoom.capacity),
+        }),
+      })
+      await load()
+      setRoomDialogOpen(false)
+      setNewRoom({ roomNumber: "", type: "Single", floor: "1", pricePerNight: "", capacity: "1" })
+    } catch { /* empty */ }
+  }
+
+  async function handleAddTable() {
+    try {
+      await apiFetch("/api/tables", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tableNumber: newTable.tableNumber,
+          capacity: parseInt(newTable.capacity),
+          location: newTable.location,
+        }),
+      })
+      await load()
+      setTableDialogOpen(false)
+      setNewTable({ tableNumber: "", capacity: "2", location: "Indoor" })
+    } catch { /* empty */ }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage rooms, tables, and price configurations (Administrator)
-        </p>
+        <p className="text-sm text-muted-foreground">Manage rooms, tables, and price configurations (Administrator)</p>
       </div>
 
       <Tabs defaultValue="rooms">
         <TabsList>
-          <TabsTrigger value="rooms">
-            <BedDouble className="mr-1.5 size-3.5" />
-            Rooms
-          </TabsTrigger>
-          <TabsTrigger value="tables">
-            <UtensilsCrossed className="mr-1.5 size-3.5" />
-            Tables
-          </TabsTrigger>
+          <TabsTrigger value="rooms"><BedDouble className="mr-1.5 size-3.5" />Rooms</TabsTrigger>
+          <TabsTrigger value="tables"><UtensilsCrossed className="mr-1.5 size-3.5" />Tables</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
         </TabsList>
 
@@ -107,55 +121,32 @@ export function SettingsSection() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">Room Configuration</CardTitle>
-                  <CardDescription>
-                    Add or edit rooms in the hotel
-                  </CardDescription>
+                  <CardDescription>Add or edit rooms in the hotel</CardDescription>
                 </div>
                 <Dialog open={roomDialogOpen} onOpenChange={setRoomDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="mr-1 size-3.5" />
-                      Add Room
-                    </Button>
+                    <Button size="sm"><Plus className="mr-1 size-3.5" />Add Room</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Add New Room</DialogTitle>
-                      <DialogDescription>
-                        Configure a new room for the hotel
-                      </DialogDescription>
+                      <DialogDescription>Configure a new room for the hotel</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-2">
                           <Label>Room Number</Label>
-                          <Input
-                            value={newRoom.number}
-                            onChange={(e) =>
-                              setNewRoom({ ...newRoom, number: e.target.value })
-                            }
-                            placeholder="e.g. 401"
-                          />
+                          <Input value={newRoom.roomNumber} onChange={(e) => setNewRoom({ ...newRoom, roomNumber: e.target.value })} placeholder="e.g. 401" />
                         </div>
                         <div className="flex flex-col gap-2">
                           <Label>Type</Label>
-                          <Select
-                            value={newRoom.type}
-                            onValueChange={(v) =>
-                              setNewRoom({
-                                ...newRoom,
-                                type: v as Room["type"],
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                          <Select value={newRoom.type} onValueChange={(v) => setNewRoom({ ...newRoom, type: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="single">Single</SelectItem>
-                              <SelectItem value="double">Double</SelectItem>
-                              <SelectItem value="suite">Suite</SelectItem>
-                              <SelectItem value="deluxe">Deluxe</SelectItem>
+                              <SelectItem value="Single">Single</SelectItem>
+                              <SelectItem value="Double">Double</SelectItem>
+                              <SelectItem value="Suite">Suite</SelectItem>
+                              <SelectItem value="Deluxe">Deluxe</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -163,47 +154,20 @@ export function SettingsSection() {
                       <div className="grid grid-cols-3 gap-4">
                         <div className="flex flex-col gap-2">
                           <Label>Floor</Label>
-                          <Input
-                            type="number"
-                            value={newRoom.floor}
-                            onChange={(e) =>
-                              setNewRoom({ ...newRoom, floor: e.target.value })
-                            }
-                          />
+                          <Input type="number" value={newRoom.floor} onChange={(e) => setNewRoom({ ...newRoom, floor: e.target.value })} />
                         </div>
                         <div className="flex flex-col gap-2">
                           <Label>Price/Night</Label>
-                          <Input
-                            type="number"
-                            value={newRoom.price}
-                            onChange={(e) =>
-                              setNewRoom({ ...newRoom, price: e.target.value })
-                            }
-                            placeholder="$"
-                          />
+                          <Input type="number" value={newRoom.pricePerNight} onChange={(e) => setNewRoom({ ...newRoom, pricePerNight: e.target.value })} placeholder="$" />
                         </div>
                         <div className="flex flex-col gap-2">
                           <Label>Capacity</Label>
-                          <Input
-                            type="number"
-                            value={newRoom.capacity}
-                            onChange={(e) =>
-                              setNewRoom({
-                                ...newRoom,
-                                capacity: e.target.value,
-                              })
-                            }
-                          />
+                          <Input type="number" value={newRoom.capacity} onChange={(e) => setNewRoom({ ...newRoom, capacity: e.target.value })} />
                         </div>
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button
-                        onClick={handleAddRoom}
-                        disabled={!newRoom.number || !newRoom.price}
-                      >
-                        Add Room
-                      </Button>
+                      <Button onClick={handleAddRoom} disabled={!newRoom.roomNumber || !newRoom.pricePerNight}>Add Room</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -223,28 +187,14 @@ export function SettingsSection() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allRooms.map((room) => (
-                      <TableRow key={room.id}>
-                        <TableCell className="font-medium text-foreground">
-                          {room.number}
-                        </TableCell>
-                        <TableCell className="capitalize text-foreground">
-                          {room.type}
-                        </TableCell>
-                        <TableCell className="text-foreground">
-                          {room.floor}
-                        </TableCell>
-                        <TableCell className="text-foreground">
-                          {room.capacity}
-                        </TableCell>
-                        <TableCell className="font-medium text-foreground">
-                          ${room.pricePerNight}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {room.status}
-                          </Badge>
-                        </TableCell>
+                    {rooms.map((room) => (
+                      <TableRow key={room.roomId}>
+                        <TableCell className="font-medium text-foreground">{room.roomNumber}</TableCell>
+                        <TableCell className="capitalize text-foreground">{room.type}</TableCell>
+                        <TableCell className="text-foreground">{room.floor}</TableCell>
+                        <TableCell className="text-foreground">{room.capacity}</TableCell>
+                        <TableCell className="font-medium text-foreground">${room.pricePerNight}</TableCell>
+                        <TableCell><Badge variant="outline" className="capitalize">{room.status}</Badge></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -259,88 +209,43 @@ export function SettingsSection() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">
-                    Table Configuration
-                  </CardTitle>
-                  <CardDescription>
-                    Add or edit restaurant tables
-                  </CardDescription>
+                  <CardTitle className="text-base">Table Configuration</CardTitle>
+                  <CardDescription>Add or edit restaurant tables</CardDescription>
                 </div>
-                <Dialog
-                  open={tableDialogOpen}
-                  onOpenChange={setTableDialogOpen}
-                >
+                <Dialog open={tableDialogOpen} onOpenChange={setTableDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="mr-1 size-3.5" />
-                      Add Table
-                    </Button>
+                    <Button size="sm"><Plus className="mr-1 size-3.5" />Add Table</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Add New Table</DialogTitle>
-                      <DialogDescription>
-                        Configure a new restaurant table
-                      </DialogDescription>
+                      <DialogDescription>Configure a new restaurant table</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                       <div className="flex flex-col gap-2">
                         <Label>Table Number</Label>
-                        <Input
-                          value={newTable.number}
-                          onChange={(e) =>
-                            setNewTable({
-                              ...newTable,
-                              number: e.target.value,
-                            })
-                          }
-                          placeholder="e.g. T9"
-                        />
+                        <Input value={newTable.tableNumber} onChange={(e) => setNewTable({ ...newTable, tableNumber: e.target.value })} placeholder="e.g. T9" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-2">
                           <Label>Seats</Label>
-                          <Input
-                            type="number"
-                            value={newTable.seats}
-                            onChange={(e) =>
-                              setNewTable({
-                                ...newTable,
-                                seats: e.target.value,
-                              })
-                            }
-                          />
+                          <Input type="number" value={newTable.capacity} onChange={(e) => setNewTable({ ...newTable, capacity: e.target.value })} />
                         </div>
                         <div className="flex flex-col gap-2">
                           <Label>Location</Label>
-                          <Select
-                            value={newTable.location}
-                            onValueChange={(v) =>
-                              setNewTable({
-                                ...newTable,
-                                location: v as RestaurantTable["location"],
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                          <Select value={newTable.location} onValueChange={(v) => setNewTable({ ...newTable, location: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="indoor">Indoor</SelectItem>
-                              <SelectItem value="terrace">Terrace</SelectItem>
-                              <SelectItem value="private">Private</SelectItem>
+                              <SelectItem value="Indoor">Indoor</SelectItem>
+                              <SelectItem value="Terrace">Terrace</SelectItem>
+                              <SelectItem value="Private">Private</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button
-                        onClick={handleAddTable}
-                        disabled={!newTable.number}
-                      >
-                        Add Table
-                      </Button>
+                      <Button onClick={handleAddTable} disabled={!newTable.tableNumber}>Add Table</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -358,22 +263,12 @@ export function SettingsSection() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allTables.map((table) => (
-                      <TableRow key={table.id}>
-                        <TableCell className="font-medium text-foreground">
-                          {table.number}
-                        </TableCell>
-                        <TableCell className="text-foreground">
-                          {table.seats}
-                        </TableCell>
-                        <TableCell className="capitalize text-foreground">
-                          {table.location}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {table.status}
-                          </Badge>
-                        </TableCell>
+                    {tables.map((table) => (
+                      <TableRow key={table.tableId}>
+                        <TableCell className="font-medium text-foreground">{table.tableNumber}</TableCell>
+                        <TableCell className="text-foreground">{table.capacity}</TableCell>
+                        <TableCell className="capitalize text-foreground">{table.location}</TableCell>
+                        <TableCell><Badge variant="outline" className="capitalize">{table.status}</Badge></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -387,9 +282,7 @@ export function SettingsSection() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Service Price List</CardTitle>
-              <CardDescription>
-                Current pricing for additional services
-              </CardDescription>
+              <CardDescription>Current pricing for additional services</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border border-border">
@@ -397,18 +290,16 @@ export function SettingsSection() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Service</TableHead>
+                      <TableHead>Category</TableHead>
                       <TableHead className="text-right">Price</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {availableServices.map((svc) => (
-                      <TableRow key={svc.name}>
-                        <TableCell className="font-medium text-foreground">
-                          {svc.name}
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-foreground">
-                          ${svc.price}
-                        </TableCell>
+                    {services.map((svc) => (
+                      <TableRow key={svc.serviceId}>
+                        <TableCell className="font-medium text-foreground">{svc.name}</TableCell>
+                        <TableCell className="capitalize text-muted-foreground">{svc.category}</TableCell>
+                        <TableCell className="text-right font-medium text-foreground">${svc.unitPrice}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

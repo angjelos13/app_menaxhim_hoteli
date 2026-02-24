@@ -31,7 +31,6 @@ export async function POST(req: NextRequest) {
     const token = await createSession({
       userId: String(user.userId),
       username: user.username,
-      name: user.username,
       role: user.role,
     })
 
@@ -47,7 +46,7 @@ export async function POST(req: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 8, // 8 hours
+      maxAge: 60 * 60 * 8,
       path: "/",
     })
 

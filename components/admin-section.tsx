@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Users,
   Shield,
   Plus,
   CheckCircle2,
   XCircle,
+  Loader2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,10 +25,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { users as initialUsers, type User, type UserRole } from "@/lib/hotel-data"
+import { apiFetch } from "@/lib/api"
+
+type UserRole = "Receptionist" | "Operational" | "Administrator"
+
+interface UserRow {
+  userId: number
+  username: string
+  role: UserRole
+  isActive: boolean
+}
 
 const rolePermissions: Record<UserRole, string[]> = {
-  receptionist: [
+  Receptionist: [
     "Create/Modify/Cancel Reservations",
     "Check Availability",
     "Check-in/Check-out Guests",
@@ -36,12 +46,12 @@ const rolePermissions: Record<UserRole, string[]> = {
     "Record Payments",
     "View Reservation List",
   ],
-  operational: [
+  Operational: [
     "Update Room Status",
     "Register Inventory Usage",
     "View Inventory Levels",
   ],
-  administrator: [
+  Administrator: [
     "Manage Users",
     "Assign Roles/Permissions",
     "Manage Rooms & Tables",
@@ -53,45 +63,68 @@ const rolePermissions: Record<UserRole, string[]> = {
 }
 
 const roleBadgeVariant: Record<UserRole, "default" | "secondary" | "outline"> = {
-  administrator: "default",
-  receptionist: "secondary",
-  operational: "outline",
+  Administrator: "default",
+  Receptionist: "secondary",
+  Operational: "outline",
 }
 
 export function AdminSection() {
-  const [allUsers, setAllUsers] = useState<User[]>(initialUsers)
+  const [users, setUsers] = useState<UserRow[]>([])
+  const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [newUser, setNewUser] = useState({
-    name: "",
-    email: "",
-    role: "receptionist" as UserRole,
-  })
+  const [newUser, setNewUser] = useState({ username: "", password: "", role: "Receptionist" as UserRole })
 
-  function handleCreateUser() {
-    const user: User = {
-      id: `u-${Date.now()}`,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      active: true,
-      lastLogin: "Never",
-    }
-    setAllUsers((prev) => [...prev, user])
-    setDialogOpen(false)
-    setNewUser({ name: "", email: "", role: "receptionist" })
+  async function load() {
+    setLoading(true)
+    try {
+      const data = await apiFetch("/api/users")
+      setUsers(data)
+    } catch { /* empty */ }
+    setLoading(false)
   }
 
-  function toggleUserActive(userId: string) {
-    setAllUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId ? { ...u, active: !u.active } : u
-      )
-    )
+  useEffect(() => { load() }, [])
+
+  async function handleCreateUser() {
+    try {
+      await apiFetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser),
+      })
+      await load()
+      setDialogOpen(false)
+      setNewUser({ username: "", password: "", role: "Receptionist" })
+    } catch { /* empty */ }
   }
 
-  function changeUserRole(userId: string, role: UserRole) {
-    setAllUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role } : u))
+  async function toggleUserActive(userId: number, isActive: boolean) {
+    try {
+      await apiFetch("/api/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, isActive: !isActive }),
+      })
+      await load()
+    } catch { /* empty */ }
+  }
+
+  async function changeUserRole(userId: number, role: UserRole) {
+    try {
+      await apiFetch("/api/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, role }),
+      })
+      await load()
+    } catch { /* empty */ }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
     )
   }
 
@@ -99,82 +132,42 @@ export function AdminSection() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">
-            User Management
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Create, edit, and manage user accounts and role assignments
-          </p>
+          <h1 className="text-2xl font-semibold text-foreground">User Management</h1>
+          <p className="text-sm text-muted-foreground">Create, edit, and manage user accounts and role assignments</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 size-4" />
-              Add User
-            </Button>
+            <Button><Plus className="mr-2 size-4" />Add User</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
-              <DialogDescription>
-                Add a new user to the hotel management system
-              </DialogDescription>
+              <DialogDescription>Add a new user to the hotel management system</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="userName">Full Name</Label>
-                <Input
-                  id="userName"
-                  value={newUser.name}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, name: e.target.value })
-                  }
-                  placeholder="Enter full name"
-                />
+                <Label htmlFor="userName">Username</Label>
+                <Input id="userName" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} placeholder="Enter username" />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="userEmail">Email</Label>
-                <Input
-                  id="userEmail"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, email: e.target.value })
-                  }
-                  placeholder="user@hoteldesk.com"
-                />
+                <Label htmlFor="userPass">Password</Label>
+                <Input id="userPass" type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} placeholder="Enter password" />
               </div>
               <div className="flex flex-col gap-2">
                 <Label>Role</Label>
-                <Select
-                  value={newUser.role}
-                  onValueChange={(v) =>
-                    setNewUser({ ...newUser, role: v as UserRole })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as UserRole })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="receptionist">Receptionist</SelectItem>
-                    <SelectItem value="operational">
-                      Operational Staff
-                    </SelectItem>
-                    <SelectItem value="administrator">Administrator</SelectItem>
+                    <SelectItem value="Receptionist">Receptionist</SelectItem>
+                    <SelectItem value="Operational">Operational Staff</SelectItem>
+                    <SelectItem value="Administrator">Administrator</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateUser}
-                disabled={!newUser.name || !newUser.email}
-              >
-                Create User
-              </Button>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleCreateUser} disabled={!newUser.username || !newUser.password}>Create User</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -183,9 +176,7 @@ export function AdminSection() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">System Users</CardTitle>
-          <CardDescription>
-            Manage accounts, toggle active status, and assign roles
-          </CardDescription>
+          <CardDescription>Manage accounts, toggle active status, and assign roles</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border border-border">
@@ -195,79 +186,38 @@ export function AdminSection() {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Last Login</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {allUsers.map((user) => (
-                  <TableRow key={user.id}>
+                {users.map((user) => (
+                  <TableRow key={user.userId}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <div className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                          {user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {user.username.slice(0, 2).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
-                            {user.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {user.email}
-                          </p>
-                        </div>
+                        <p className="text-sm font-medium text-foreground">{user.username}</p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={user.role}
-                        onValueChange={(v) =>
-                          changeUserRole(user.id, v as UserRole)
-                        }
-                      >
-                        <SelectTrigger className="h-7 w-32 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
+                      <Select value={user.role} onValueChange={(v) => changeUserRole(user.userId, v as UserRole)}>
+                        <SelectTrigger className="h-7 w-32 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="receptionist">
-                            Receptionist
-                          </SelectItem>
-                          <SelectItem value="operational">
-                            Operational
-                          </SelectItem>
-                          <SelectItem value="administrator">
-                            Administrator
-                          </SelectItem>
+                          <SelectItem value="Receptionist">Receptionist</SelectItem>
+                          <SelectItem value="Operational">Operational</SelectItem>
+                          <SelectItem value="Administrator">Administrator</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        {user.active ? (
-                          <CheckCircle2 className="size-3.5 text-success" />
-                        ) : (
-                          <XCircle className="size-3.5 text-muted-foreground" />
-                        )}
-                        <span
-                          className={`text-sm ${user.active ? "text-success" : "text-muted-foreground"}`}
-                        >
-                          {user.active ? "Active" : "Inactive"}
-                        </span>
+                        {user.isActive ? <CheckCircle2 className="size-3.5 text-success" /> : <XCircle className="size-3.5 text-muted-foreground" />}
+                        <span className={`text-sm ${user.isActive ? "text-success" : "text-muted-foreground"}`}>{user.isActive ? "Active" : "Inactive"}</span>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {user.lastLogin}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Switch
-                          checked={user.active}
-                          onCheckedChange={() => toggleUserActive(user.id)}
-                          aria-label={`Toggle ${user.name} active status`}
-                        />
-                      </div>
+                      <Switch checked={user.isActive} onCheckedChange={() => toggleUserActive(user.userId, user.isActive)} aria-label={`Toggle ${user.username} active status`} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -280,45 +230,27 @@ export function AdminSection() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Shield className="size-4 text-primary" />
-            Role Permissions Matrix
+            <Shield className="size-4 text-primary" />Role Permissions Matrix
           </CardTitle>
-          <CardDescription>
-            Overview of permissions assigned to each role
-          </CardDescription>
+          <CardDescription>Overview of permissions assigned to each role</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            {(Object.entries(rolePermissions) as [UserRole, string[]][]).map(
-              ([role, perms]) => (
-                <div
-                  key={role}
-                  className="rounded-lg border border-border p-4"
-                >
-                  <div className="mb-3 flex items-center gap-2">
-                    <Badge variant={roleBadgeVariant[role]} className="capitalize">
-                      {role}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      (
-                      {allUsers.filter((u) => u.role === role && u.active).length}{" "}
-                      active)
-                    </span>
-                  </div>
-                  <ul className="flex flex-col gap-1.5">
-                    {perms.map((perm) => (
-                      <li
-                        key={perm}
-                        className="flex items-start gap-2 text-xs text-muted-foreground"
-                      >
-                        <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-success" />
-                        {perm}
-                      </li>
-                    ))}
-                  </ul>
+            {(Object.entries(rolePermissions) as [UserRole, string[]][]).map(([role, perms]) => (
+              <div key={role} className="rounded-lg border border-border p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <Badge variant={roleBadgeVariant[role]} className="capitalize">{role}</Badge>
+                  <span className="text-xs text-muted-foreground">({users.filter((u) => u.role === role && u.isActive).length} active)</span>
                 </div>
-              )
-            )}
+                <ul className="flex flex-col gap-1.5">
+                  {perms.map((perm) => (
+                    <li key={perm} className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-success" />{perm}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

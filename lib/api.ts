@@ -1,29 +1,26 @@
-export async function apiFetch<T>(
+export async function apiFetch<T = unknown>(
   url: string,
   options?: RequestInit
-): Promise<{ data?: T; error?: string }> {
-  try {
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(options?.headers || {}),
-      },
-    })
+): Promise<T> {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options?.headers || {}),
+    },
+  })
 
-    if (res.status === 401) {
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
       window.location.href = "/login"
-      return { error: "Unauthorized" }
     }
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      return { error: data.error || `Request failed (${res.status})` }
-    }
-
-    return { data }
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : "Network error" }
+    throw new Error("Unauthorized")
   }
+
+  const data = await res.json()
+
+  if (!res.ok) {
+    throw new Error(data.error || `Request failed (${res.status})`)
+  }
+
+  return data as T
 }

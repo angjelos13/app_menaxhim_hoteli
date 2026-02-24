@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -13,6 +14,8 @@ import { TablesSection } from "@/components/tables-section"
 import { InventorySection } from "@/components/inventory-section"
 import { AdminSection } from "@/components/admin-section"
 import { SettingsSection } from "@/components/settings-section"
+import { useAuth } from "@/lib/auth-context"
+import { Loader2 } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,7 +37,23 @@ const sectionTitles: Record<string, { label: string; group: string }> = {
 }
 
 export default function HotelManagementPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
   const [activeSection, setActiveSection] = useState("dashboard")
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login")
+    }
+  }, [loading, user, router])
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   const currentSection = sectionTitles[activeSection] || {
     label: "Dashboard",

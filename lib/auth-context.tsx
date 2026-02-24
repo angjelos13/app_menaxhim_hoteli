@@ -1,13 +1,11 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react"
-import type { UserRole } from "./hotel-data"
 
 interface AuthUser {
-  id: string
+  id: string | number
   username: string
-  name: string
-  role: UserRole
+  role: string
 }
 
 interface AuthContextValue {
@@ -35,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { user: null }
       })
       .then((data) => {
-        setUser(data.user)
+        setUser(data.user ?? null)
       })
       .catch(() => setUser(null))
       .finally(() => setLoading(false))
@@ -57,7 +55,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({
       id: data.user.id,
       username: data.user.username,
-      name: data.user.username,
       role: data.user.role,
     })
     return {}
@@ -66,7 +63,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" })
     setUser(null)
-    window.location.href = "/login"
+    if (typeof window !== "undefined") {
+      window.location.href = "/login"
+    }
   }, [])
 
   return (

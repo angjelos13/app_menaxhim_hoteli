@@ -1,14 +1,13 @@
 import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
-import type { UserRole } from "./hotel-data"
+import crypto from "crypto"
 
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET || "hotel-desk-dev-secret-change-in-production")
 
 export interface SessionPayload {
   userId: string
   username: string
-  name: string
-  role: UserRole
+  role: string
 }
 
 export async function createSession(payload: SessionPayload): Promise<string> {
@@ -34,8 +33,6 @@ export async function verifySession(): Promise<SessionPayload | null> {
 }
 
 export function hashPassword(password: string): string {
-  // Simple hash for demo -- in production use bcrypt via a server action
-  const crypto = require("crypto")
   return crypto.createHash("sha256").update(password).digest("hex")
 }
 
@@ -43,6 +40,6 @@ export function verifyPassword(password: string, hash: string): boolean {
   return hashPassword(password) === hash
 }
 
-export function checkRole(userRole: UserRole, allowedRoles: UserRole[]): boolean {
+export function checkRole(userRole: string, allowedRoles: string[]): boolean {
   return allowedRoles.includes(userRole)
 }
