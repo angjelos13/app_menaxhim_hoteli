@@ -13,7 +13,7 @@ export async function GET() {
         SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) AS availableRooms,
         SUM(CASE WHEN status = 'Cleaning' THEN 1 ELSE 0 END) AS cleaningRooms,
         SUM(CASE WHEN status = 'Maintenance' THEN 1 ELSE 0 END) AS maintenanceRooms
-      FROM hotel.Rooms
+      FROM [hotel].[Rooms]
     `)
 
     // Table stats
@@ -23,7 +23,7 @@ export async function GET() {
         SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) AS availableTables,
         SUM(CASE WHEN status = 'Reserved' THEN 1 ELSE 0 END) AS reservedTables,
         SUM(CASE WHEN status = 'Occupied' THEN 1 ELSE 0 END) AS occupiedTables
-      FROM hotel.Tables
+      FROM [hotel].[Tables]
     `)
 
     // Active guests (checked-in reservations)
@@ -60,10 +60,10 @@ export async function GET() {
     const recentReservations = await db.request().query(`
       SELECT TOP 5 r.reservationId, r.reservationType, r.status, r.startDate, r.endDate,
                    c.fullName AS guestName, rm.roomNumber, t.tableNumber
-      FROM hotel.Reservations r
-      JOIN hotel.Customers c ON r.customerId = c.customerId
-      LEFT JOIN hotel.Rooms rm ON r.roomId = rm.roomId
-      LEFT JOIN hotel.Tables t ON r.tableId = t.tableId
+      FROM [hotel].[Reservations] r
+      JOIN [hotel].[Customers] c ON r.customerId = c.customerId
+      LEFT JOIN [hotel].[Rooms] rm ON r.roomId = rm.roomId
+      LEFT JOIN [hotel].[Tables] t ON r.tableId = t.tableId
       ORDER BY r.createdAt DESC
     `)
 
@@ -77,8 +77,11 @@ export async function GET() {
       lowStockItems: lowStock.recordset,
       recentReservations: recentReservations.recordset,
     })
-  } catch (error) {
-    console.error("GET /api/dashboard error:", error)
-    return NextResponse.json({ error: "Failed to fetch dashboard data" }, { status: 500 })
-  }
+ } catch (error: any) {
+  console.error("GET /api/dashboard error:", error)
+  return NextResponse.json(
+    { error: "Failed to fetch dashboard data", detail: error?.message ?? String(error) },
+    { status: 500 }
+  )
+}
 }

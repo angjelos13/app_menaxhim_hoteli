@@ -50,13 +50,32 @@ interface DashboardData {
 export function DashboardOverview() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
-    apiFetch<DashboardData>("/api/dashboard").then(({ data: d }) => {
-      if (d) setData(d)
-      setLoading(false)
-    })
-  }, [])
+  let cancelled = false
+
+  async function load() {
+    try {
+      setLoading(true)
+      setErrorMsg(null)
+
+      const d = await apiFetch<DashboardData>("/api/dashboard") // ose fetch direkt
+      if (!cancelled) setData(d)
+    } catch (e: any) {
+      console.error("Dashboard fetch failed:", e)
+      if (!cancelled) {
+        setData(null)
+        setErrorMsg(e?.message ?? "Failed to load dashboard")
+      }
+    } finally {
+      if (!cancelled) setLoading(false)
+    }
+  }
+
+  load()
+  return () => { cancelled = true }
+}, [])
 
   if (loading || !data) {
     return (
@@ -65,6 +84,22 @@ export function DashboardOverview() {
       </div>
     )
   }
+
+  if (errorMsg) {
+  return (
+    <div className="flex h-64 items-center justify-center text-sm text-destructive">
+      {errorMsg}
+    </div>
+  )
+}
+
+if (!data) {
+  return (
+    <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+      No dashboard data.
+    </div>
+  )
+}
 
   return (
     <div className="flex flex-col gap-6">
