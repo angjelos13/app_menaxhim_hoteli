@@ -28,6 +28,8 @@ export function InventorySection() {
   const [outflowDialog, setOutflowDialog] = useState<number | null>(null)
   const [outflowAmount, setOutflowAmount] = useState("")
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [outflowError, setOutflowError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -65,24 +67,44 @@ export function InventorySection() {
   const healthyCount = safeItems.filter((i) => i.quantityOnHand >= i.minThreshold).length
   const categories = [...new Set(safeItems.map((i) => i.category).filter(Boolean))]
 
-  async function handleOutflow(itemId: number) {
-    const amount = parseInt(outflowAmount, 10)
-    if (isNaN(amount) || amount <= 0) return
+  async function handleOutflow(item: InventoryRow) {
+  const amount = parseInt(outflowAmount, 10)
 
-    try {
-      await apiFetch("/api/inventory/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemId, type: "Outflow", quantity: amount, notes: "Manual outflow" }),
-      })
-      await load()
-    } catch (e) {
-      console.error("Outflow failed:", e)
-    } finally {
-      setOutflowAmount("")
-      setOutflowDialog(null)
-    }
+  if (isNaN(amount) || amount <= 0) {
+    setOutflowError("Enter a valid amount.")
+    return
   }
+
+  if (amount > item.quantityOnHand) {
+    setOutflowError(`Not enough stock. Available: ${item.quantityOnHand} ${item.unit}.`)
+    return
+  }
+
+  setSubmitting(true)
+  setOutflowError(null)
+
+  try {
+    await apiFetch("/api/inventory/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        itemId: item.itemId,
+        type: "Outflow",
+        quantity: amount,
+        notes: "Manual outflow",
+      }),
+    })
+
+    await load()
+    setOutflowAmount("")
+    setOutflowDialog(null) // mbylle vetëm kur ka sukses
+  } catch (e: any) {
+    console.error("Outflow failed:", e)
+    setOutflowError(e?.message ?? "Outflow failed")
+  } finally {
+    setSubmitting(false)
+  }
+}
 
   if (loading) {
     return (
@@ -183,8 +205,12 @@ export function InventorySection() {
                     </div>
 
                     <Dialog
-                      open={outflowDialog === item.itemId}
-                      onOpenChange={(open) => setOutflowDialog(open ? item.itemId : null)}
+                          open={outflowDialog === item.itemId}
+                          onOpenChange={(open) => {
+                            setOutflowDialog(open ? item.itemId : null)
+                            setOutflowAmount("")
+                            setOutflowError(null)
+                          }}
                     >
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
@@ -206,12 +232,37 @@ export function InventorySection() {
                             min="1"
                             max={item.quantityOnHand}
                             value={outflowAmount}
-                            onChange={(e) => setOutflowAmount(e.target.value)}
+                            onChange={(e) => {
+                              setOutflowAmount(e.target.value)
+                              setOutflowError(null)
+                            }}
                             placeholder={`Max: ${item.quantityOnHand}`}
                           />
+
+                          {outflowError && (
+                            <p className="mt-2 text-sm text-destructive">{outflowError}</p>
+                          )}
+
+                          {!outflowError && (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Available: {item.quantityOnHand} {item.unit}
+                            </p>
+                          )}
                         </div>
-                        <DialogFooter>
-                          <Button onClick={() => handleOutflow(item.itemId)}>Confirm Outflow</Button>
+                       <DialogFooter>
+                          <Button
+                            onClick={() => handleOutflow(item)}
+                            disabled={
+                              submitting ||
+                              !outflowAmount ||
+                              Number.isNaN(parseInt(outflowAmount, 10)) ||
+                              parseInt(outflowAmount, 10) <= 0 ||
+                              parseInt(outflowAmount, 10) > item.quantityOnHand
+                            }
+                          >
+                            {submitting && <Loader2 className="mr-2 size-4 animate-spin" />}
+                            Confirm Outflow
+                          </Button>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>

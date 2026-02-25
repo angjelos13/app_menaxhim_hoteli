@@ -47,6 +47,10 @@ export function InvoicingSection() {
   const [loading, setLoading] = useState(true)
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const nights = Number(invoices.nights ?? 0)
+  const pricePerNight = Number(invoices.pricePerNight ?? 0)
+  const roomTotal = Number(invoices.roomTotal ?? (nights * pricePerNight))
+
 
   async function load() {
     setLoading(true)
@@ -193,7 +197,14 @@ export function InvoicingSection() {
                             <FileText className="mr-1 size-3.5" />Invoice
                           </Button>
                           {inv.paymentStatus !== "Paid" && (
-                            <Button size="sm" onClick={() => recordPayment(inv.invoiceId)}>
+                            <Button
+                              size="sm"
+                              type="button"
+                              onClick={() => {
+                                console.log("PAY CLICK", inv.invoiceId, inv)
+                                recordPayment(inv.invoiceId)
+                              }}
+                            >
                               <CreditCard className="mr-1 size-3.5" />Pay
                             </Button>
                           )}
@@ -242,9 +253,14 @@ export function InvoicingSection() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Room ({selectedInvoice.nights} nights x ${selectedInvoice.pricePerNight})</span>
-                  <span className="text-foreground">${selectedInvoice.roomTotal.toFixed(2)}</span>
+                  <span className="text-foreground">
+                      ${Number(
+                        selectedInvoice.roomTotal ??
+                        (Number(selectedInvoice.nights) * Number(selectedInvoice.pricePerNight))
+                      ).toFixed(2)}
+                    </span>
                 </div>
-                {selectedInvoice.services.map((svc, i) => (
+                {(selectedInvoice.services ?? []).map((svc, i) => (
                   <div key={i} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{svc.name} (x{svc.quantity})</span>
                     <span className="text-foreground">${svc.totalPrice.toFixed(2)}</span>
