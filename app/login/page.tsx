@@ -88,14 +88,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-          <div className="mt-6 rounded-lg border border-border bg-muted/50 p-3">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">Demo Credentials</p>
-            <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-              <span><strong className="text-foreground">Admin:</strong> ana.martinez / admin123</span>
-              <span><strong className="text-foreground">Receptionist:</strong> carlos.ruiz / recep123</span>
-              <span><strong className="text-foreground">Operational:</strong> pedro.sanchez / oper123</span>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

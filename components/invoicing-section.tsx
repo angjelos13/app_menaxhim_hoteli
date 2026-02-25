@@ -46,24 +46,43 @@ export function InvoicingSection() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
+    setErrorMsg(null)
+
     try {
-      const data = await apiFetch("/api/invoices")
-      setInvoices(data)
-    } catch { /* empty */ }
-    setLoading(false)
+      const { data } = await apiFetch<any>("/api/invoices")
+
+      const list: InvoiceRow[] =
+        Array.isArray(data) ? data :
+        Array.isArray(data?.invoices) ? data.invoices :
+        Array.isArray(data?.recordset) ? data.recordset :
+        []
+
+      setInvoices(list)
+    } catch (e: any) {
+      console.error("Invoices load failed:", e)
+      setInvoices([])
+      setErrorMsg(e?.message ?? "Failed to load invoices")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   const totalPaid = invoices
     .filter((i) => i.paymentStatus === "Paid")
     .reduce((s, i) => s + i.total, 0)
+
   const totalPending = invoices
     .filter((i) => i.paymentStatus === "Pending" || i.paymentStatus === "Issued")
     .reduce((s, i) => s + i.total, 0)
+
   const totalPartial = invoices
     .filter((i) => i.paymentStatus === "Partial")
     .reduce((s, i) => s + i.total, 0)
@@ -91,6 +110,14 @@ export function InvoicingSection() {
       </div>
     )
   }
+
+  if (errorMsg) {
+  return (
+    <div className="flex h-64 items-center justify-center text-sm text-destructive">
+      {errorMsg}
+    </div>
+  )
+}
 
   return (
     <div className="flex flex-col gap-6">

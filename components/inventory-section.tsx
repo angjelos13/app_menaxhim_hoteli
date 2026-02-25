@@ -1,12 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-  Package,
-  AlertTriangle,
-  Minus,
-  Loader2,
-} from "lucide-react"
+import { Package, AlertTriangle, Minus, Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,28 +27,48 @@ export function InventorySection() {
   const [filterCategory, setFilterCategory] = useState("all")
   const [outflowDialog, setOutflowDialog] = useState<number | null>(null)
   const [outflowAmount, setOutflowAmount] = useState("")
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
+    setErrorMsg(null)
+
     try {
-      const data = await apiFetch("/api/inventory")
-      setItems(data)
-    } catch { /* empty */ }
-    setLoading(false)
+      const { data } = await apiFetch<any>("/api/inventory")
+
+      const list: InventoryRow[] =
+        Array.isArray(data) ? data :
+        Array.isArray(data?.items) ? data.items :
+        Array.isArray(data?.recordset) ? data.recordset :
+        []
+
+      setItems(list)
+    } catch (e: any) {
+      console.error("Inventory load failed:", e)
+      setItems([])
+      setErrorMsg(e?.message ?? "Failed to load inventory")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
-  const filteredItems = items.filter(
+  const safeItems = Array.isArray(items) ? items : []
+
+  const filteredItems = safeItems.filter(
     (i) => filterCategory === "all" || i.category === filterCategory
   )
-  const lowStockCount = items.filter((i) => i.quantityOnHand < i.minThreshold).length
-  const healthyCount = items.filter((i) => i.quantityOnHand >= i.minThreshold).length
-  const categories = [...new Set(items.map((i) => i.category).filter(Boolean))]
+  const lowStockCount = safeItems.filter((i) => i.quantityOnHand < i.minThreshold).length
+  const healthyCount = safeItems.filter((i) => i.quantityOnHand >= i.minThreshold).length
+  const categories = [...new Set(safeItems.map((i) => i.category).filter(Boolean))]
 
   async function handleOutflow(itemId: number) {
-    const amount = parseInt(outflowAmount)
+    const amount = parseInt(outflowAmount, 10)
     if (isNaN(amount) || amount <= 0) return
+
     try {
       await apiFetch("/api/inventory/transactions", {
         method: "POST",
@@ -61,15 +76,26 @@ export function InventorySection() {
         body: JSON.stringify({ itemId, type: "Outflow", quantity: amount, notes: "Manual outflow" }),
       })
       await load()
-    } catch { /* empty */ }
-    setOutflowAmount("")
-    setOutflowDialog(null)
+    } catch (e) {
+      console.error("Outflow failed:", e)
+    } finally {
+      setOutflowAmount("")
+      setOutflowDialog(null)
+    }
   }
 
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="flex h-64 items-center justify-center text-sm text-destructive">
+        {errorMsg}
       </div>
     )
   }
@@ -88,7 +114,7 @@ export function InventorySection() {
               <Package className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{items.length}</p>
+              <p className="text-2xl font-bold text-foreground">{safeItems.length}</p>
               <p className="text-xs text-muted-foreground">Total Items</p>
             </div>
           </CardContent>
@@ -131,7 +157,9 @@ export function InventorySection() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((c) => (
-                  <SelectItem key={c} value={c}><span className="capitalize">{c}</span></SelectItem>
+                  <SelectItem key={c} value={c}>
+                    <span className="capitalize">{c}</span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -143,25 +171,44 @@ export function InventorySection() {
               const percentage = Math.min(100, (item.quantityOnHand / (item.minThreshold * 2)) * 100)
               const isLow = item.quantityOnHand < item.minThreshold
               return (
-                <div key={item.itemId} className={`rounded-lg border p-4 ${isLow ? "border-destructive/30 bg-destructive/5" : "border-border"}`}>
+                <div
+                  key={item.itemId}
+                  className={`rounded-lg border p-4 ${isLow ? "border-destructive/30 bg-destructive/5" : "border-border"}`}
+                >
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-foreground">{item.name}</span>
                       <Badge variant="outline" className="capitalize text-xs">{item.category || "General"}</Badge>
                       {isLow && <Badge variant="destructive" className="text-xs">Low Stock</Badge>}
                     </div>
-                    <Dialog open={outflowDialog === item.itemId} onOpenChange={(open) => setOutflowDialog(open ? item.itemId : null)}>
+
+                    <Dialog
+                      open={outflowDialog === item.itemId}
+                      onOpenChange={(open) => setOutflowDialog(open ? item.itemId : null)}
+                    >
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm"><Minus className="mr-1 size-3" />Register Outflow</Button>
+                        <Button variant="outline" size="sm">
+                          <Minus className="mr-1 size-3" />Register Outflow
+                        </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Register Inventory Usage</DialogTitle>
-                          <DialogDescription>Record an outflow for {item.name}. Current stock: {item.quantityOnHand} {item.unit}</DialogDescription>
+                          <DialogDescription>
+                            Record an outflow for {item.name}. Current stock: {item.quantityOnHand} {item.unit}
+                          </DialogDescription>
                         </DialogHeader>
                         <div className="py-4">
                           <Label htmlFor="outflowAmount">Amount ({item.unit})</Label>
-                          <Input id="outflowAmount" type="number" min="1" max={item.quantityOnHand} value={outflowAmount} onChange={(e) => setOutflowAmount(e.target.value)} placeholder={`Max: ${item.quantityOnHand}`} />
+                          <Input
+                            id="outflowAmount"
+                            type="number"
+                            min="1"
+                            max={item.quantityOnHand}
+                            value={outflowAmount}
+                            onChange={(e) => setOutflowAmount(e.target.value)}
+                            placeholder={`Max: ${item.quantityOnHand}`}
+                          />
                         </div>
                         <DialogFooter>
                           <Button onClick={() => handleOutflow(item.itemId)}>Confirm Outflow</Button>
@@ -169,11 +216,16 @@ export function InventorySection() {
                       </DialogContent>
                     </Dialog>
                   </div>
+
                   <div className="flex items-center gap-4">
                     <Progress value={percentage} className="flex-1" />
-                    <span className="min-w-24 text-right text-sm font-medium text-foreground">{item.quantityOnHand} / {item.minThreshold * 2} {item.unit}</span>
+                    <span className="min-w-24 text-right text-sm font-medium text-foreground">
+                      {item.quantityOnHand} / {item.minThreshold * 2} {item.unit}
+                    </span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">Minimum required: {item.minThreshold} {item.unit}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Minimum required: {item.minThreshold} {item.unit}
+                  </p>
                 </div>
               )
             })}

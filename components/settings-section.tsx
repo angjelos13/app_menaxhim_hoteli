@@ -1,12 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-  Plus,
-  BedDouble,
-  UtensilsCrossed,
-  Loader2,
-} from "lucide-react"
+import { Plus, BedDouble, UtensilsCrossed, Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,14 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { apiFetch } from "@/lib/api"
 
 interface RoomRow { roomId: number; roomNumber: string; type: string; floor: number; pricePerNight: number; status: string; capacity: number }
@@ -31,9 +19,11 @@ interface ServiceRow { serviceId: number; name: string; unitPrice: number; categ
 
 export function SettingsSection() {
   const [rooms, setRooms] = useState<RoomRow[]>([])
-  const [tables, setTables] = useState<TableRow2[]>([])
+  const [tables, setTables] = useState<TableRow2[]>([])   // ✅ mungonte
   const [services, setServices] = useState<ServiceRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
   const [roomDialogOpen, setRoomDialogOpen] = useState(false)
   const [tableDialogOpen, setTableDialogOpen] = useState(false)
 
@@ -42,17 +32,45 @@ export function SettingsSection() {
 
   async function load() {
     setLoading(true)
+    setErrorMsg(null)
+
     try {
-      const [r, t, s] = await Promise.all([
-        apiFetch("/api/rooms"),
-        apiFetch("/api/tables"),
-        apiFetch("/api/services"),
+      const [{ data: r }, { data: t }, { data: s }] = await Promise.all([
+        apiFetch<any>("/api/rooms"),
+        apiFetch<any>("/api/tables"),
+        apiFetch<any>("/api/services"),
       ])
-      setRooms(r)
-      setTables(t)
-      setServices(s)
-    } catch { /* empty */ }
-    setLoading(false)
+
+      const roomsList: RoomRow[] =
+        Array.isArray(r) ? r :
+        Array.isArray(r?.rooms) ? r.rooms :
+        Array.isArray(r?.recordset) ? r.recordset :
+        []
+
+      const tablesList: TableRow2[] =
+        Array.isArray(t) ? t :
+        Array.isArray(t?.tables) ? t.tables :
+        Array.isArray(t?.recordset) ? t.recordset :
+        []
+
+      const servicesList: ServiceRow[] =
+        Array.isArray(s) ? s :
+        Array.isArray(s?.services) ? s.services :
+        Array.isArray(s?.recordset) ? s.recordset :
+        []
+
+      setRooms(roomsList)
+      setTables(tablesList)
+      setServices(servicesList)
+    } catch (e: any) {
+      console.error("Settings load failed:", e)
+      setRooms([])
+      setTables([])
+      setServices([])
+      setErrorMsg(e?.message ?? "Failed to load settings")
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { load() }, [])
@@ -65,15 +83,17 @@ export function SettingsSection() {
         body: JSON.stringify({
           roomNumber: newRoom.roomNumber,
           type: newRoom.type,
-          floor: parseInt(newRoom.floor),
+          floor: parseInt(newRoom.floor, 10),
           pricePerNight: parseFloat(newRoom.pricePerNight),
-          capacity: parseInt(newRoom.capacity),
+          capacity: parseInt(newRoom.capacity, 10),
         }),
       })
       await load()
       setRoomDialogOpen(false)
       setNewRoom({ roomNumber: "", type: "Single", floor: "1", pricePerNight: "", capacity: "1" })
-    } catch { /* empty */ }
+    } catch (e) {
+      console.error("Add room failed:", e)
+    }
   }
 
   async function handleAddTable() {
@@ -83,14 +103,16 @@ export function SettingsSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tableNumber: newTable.tableNumber,
-          capacity: parseInt(newTable.capacity),
+          capacity: parseInt(newTable.capacity, 10),
           location: newTable.location,
         }),
       })
       await load()
       setTableDialogOpen(false)
       setNewTable({ tableNumber: "", capacity: "2", location: "Indoor" })
-    } catch { /* empty */ }
+    } catch (e) {
+      console.error("Add table failed:", e)
+    }
   }
 
   if (loading) {
@@ -100,6 +122,18 @@ export function SettingsSection() {
       </div>
     )
   }
+
+  if (errorMsg) {
+    return (
+      <div className="flex h-64 items-center justify-center text-sm text-destructive">
+        {errorMsg}
+      </div>
+    )
+  }
+
+  const safeRooms = Array.isArray(rooms) ? rooms : []
+  const safeTables = Array.isArray(tables) ? tables : []
+  const safeServices = Array.isArray(services) ? services : []
 
   return (
     <div className="flex flex-col gap-6">
@@ -123,6 +157,7 @@ export function SettingsSection() {
                   <CardTitle className="text-base">Room Configuration</CardTitle>
                   <CardDescription>Add or edit rooms in the hotel</CardDescription>
                 </div>
+
                 <Dialog open={roomDialogOpen} onOpenChange={setRoomDialogOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm"><Plus className="mr-1 size-3.5" />Add Room</Button>
@@ -132,6 +167,7 @@ export function SettingsSection() {
                       <DialogTitle>Add New Room</DialogTitle>
                       <DialogDescription>Configure a new room for the hotel</DialogDescription>
                     </DialogHeader>
+
                     <div className="grid gap-4 py-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="flex flex-col gap-2">
@@ -151,6 +187,7 @@ export function SettingsSection() {
                           </Select>
                         </div>
                       </div>
+
                       <div className="grid grid-cols-3 gap-4">
                         <div className="flex flex-col gap-2">
                           <Label>Floor</Label>
@@ -166,13 +203,18 @@ export function SettingsSection() {
                         </div>
                       </div>
                     </div>
+
                     <DialogFooter>
-                      <Button onClick={handleAddRoom} disabled={!newRoom.roomNumber || !newRoom.pricePerNight}>Add Room</Button>
+                      <Button onClick={handleAddRoom} disabled={!newRoom.roomNumber || !newRoom.pricePerNight}>
+                        Add Room
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+
               </div>
             </CardHeader>
+
             <CardContent>
               <div className="rounded-lg border border-border">
                 <Table>
@@ -187,7 +229,7 @@ export function SettingsSection() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rooms.map((room) => (
+                    {safeRooms.map((room) => (
                       <TableRow key={room.roomId}>
                         <TableCell className="font-medium text-foreground">{room.roomNumber}</TableCell>
                         <TableCell className="capitalize text-foreground">{room.type}</TableCell>
@@ -212,6 +254,7 @@ export function SettingsSection() {
                   <CardTitle className="text-base">Table Configuration</CardTitle>
                   <CardDescription>Add or edit restaurant tables</CardDescription>
                 </div>
+
                 <Dialog open={tableDialogOpen} onOpenChange={setTableDialogOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm"><Plus className="mr-1 size-3.5" />Add Table</Button>
@@ -221,6 +264,7 @@ export function SettingsSection() {
                       <DialogTitle>Add New Table</DialogTitle>
                       <DialogDescription>Configure a new restaurant table</DialogDescription>
                     </DialogHeader>
+
                     <div className="grid gap-4 py-4">
                       <div className="flex flex-col gap-2">
                         <Label>Table Number</Label>
@@ -244,13 +288,18 @@ export function SettingsSection() {
                         </div>
                       </div>
                     </div>
+
                     <DialogFooter>
-                      <Button onClick={handleAddTable} disabled={!newTable.tableNumber}>Add Table</Button>
+                      <Button onClick={handleAddTable} disabled={!newTable.tableNumber}>
+                        Add Table
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+
               </div>
             </CardHeader>
+
             <CardContent>
               <div className="rounded-lg border border-border">
                 <Table>
@@ -263,7 +312,7 @@ export function SettingsSection() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tables.map((table) => (
+                    {safeTables.map((table) => (
                       <TableRow key={table.tableId}>
                         <TableCell className="font-medium text-foreground">{table.tableNumber}</TableCell>
                         <TableCell className="text-foreground">{table.capacity}</TableCell>
@@ -295,7 +344,7 @@ export function SettingsSection() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {services.map((svc) => (
+                    {safeServices.map((svc) => (
                       <TableRow key={svc.serviceId}>
                         <TableCell className="font-medium text-foreground">{svc.name}</TableCell>
                         <TableCell className="capitalize text-muted-foreground">{svc.category}</TableCell>

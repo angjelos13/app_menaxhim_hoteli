@@ -60,7 +60,8 @@ export function DashboardOverview() {
       setLoading(true)
       setErrorMsg(null)
 
-      const d = await apiFetch<DashboardData>("/api/dashboard") // ose fetch direkt
+     const { data: d } = await apiFetch<DashboardData>("/api/dashboard")
+     setData(d)
       if (!cancelled) setData(d)
     } catch (e: any) {
       console.error("Dashboard fetch failed:", e)

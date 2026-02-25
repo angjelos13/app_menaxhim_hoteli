@@ -17,11 +17,11 @@ SET IDENTITY_INSERT [hotel].[Users] ON;
 
 INSERT INTO [hotel].[Users] (userId, username, passwordHash, role, isActive, createdAt)
 VALUES
-    (1, 'ana.martinez',    '0aa6aa6a97fc2ccb4000f87bd9e93a2125582ff044a106c3418d95c04fbc7cae', 'Administrator',  1, '2025-01-15 09:00:00'),
-    (2, 'carlos.ruiz',     '0aa6aa6a97fc2ccb4000f87bd9e93a2125582ff044a106c3418d95c04fbc7cae', 'Receptionist',   1, '2025-02-01 09:00:00'),
-    (3, 'laura.gomez',     '0aa6aa6a97fc2ccb4000f87bd9e93a2125582ff044a106c3418d95c04fbc7cae', 'Receptionist',   1, '2025-02-10 09:00:00'),
-    (4, 'pedro.sanchez',   '0aa6aa6a97fc2ccb4000f87bd9e93a2125582ff044a106c3418d95c04fbc7cae', 'Operational',    1, '2025-03-01 09:00:00'),
-    (5, 'isabel.torres',   '0aa6aa6a97fc2ccb4000f87bd9e93a2125582ff044a106c3418d95c04fbc7cae', 'Operational',    0, '2025-03-15 09:00:00');
+    (1, 'ana.martinez',    '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Administrator',  1, '2025-01-15 09:00:00'),
+    (2, 'carlos.ruiz',     '5d37ed314cf2b5c8462b52b12cd512e2ac4a180e75598da4f12bfb0dea6d0a67', 'Receptionist',   1, '2025-02-01 09:00:00'),
+    (3, 'laura.gomez',     '5d37ed314cf2b5c8462b52b12cd512e2ac4a180e75598da4f12bfb0dea6d0a67', 'Receptionist',   1, '2025-02-10 09:00:00'),
+    (4, 'pedro.sanchez',   '13a93f9a5502e71eed80a806f87bc4424e03e6b0d90acd513ea9d561c853b738', 'Operational',    1, '2025-03-01 09:00:00'),
+    (5, 'isabel.torres',   '13a93f9a5502e71eed80a806f87bc4424e03e6b0d90acd513ea9d561c853b738', 'Operational',    0, '2025-03-15 09:00:00');
 
 SET IDENTITY_INSERT [hotel].[Users] OFF;
 GO
