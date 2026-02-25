@@ -7,11 +7,19 @@ const PUBLIC_PATHS = [
   "/api/auth/login",
   "/api/auth/logout",
   "/api/db-test",  
+  "/api/rooms",
+  "/api/customers",
+  "/api/dashboard",
+  "/api/inventory",
+  "/api/invoices",
+  "/api/payments",
+  "/api/reservations",
+  "/api/service-usages",
+  "/api/services",
+  "/api/tables",
+  "/api/users",
+  "/hotel",
   "/login",
-  "/diagram",
-  "/activity-diagram",
-  "/class-diagram",
-  "/er-diagram",
 ]
 
 export async function middleware(req: NextRequest) {

@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const floor = searchParams.get("floor")
 
     const db = await getDb()
-    let query = "SELECT * FROM hotel.Rooms WHERE 1=1"
+    let query = "SELECT * FROM [hotel].[Rooms] WHERE 1=1"
     const request = db.request()
 
     if (status) {
@@ -16,16 +16,19 @@ export async function GET(req: NextRequest) {
       request.input("status", sql.NVarChar, status)
     }
     if (floor) {
-      query += " AND FLOOR(CAST(roomNumber AS INT) / 100) = @floor"
-      request.input("floor", sql.Int, parseInt(floor))
+      query += " AND FLOOR(TRY_CAST(roomNumber AS INT) / 100) = @floor"
+      request.input("floor", sql.Int, parseInt(floor, 10))
     }
 
     query += " ORDER BY roomNumber"
     const result = await request.query(query)
     return NextResponse.json(result.recordset)
-  } catch (error) {
+  } catch (error: any) {
     console.error("GET /api/rooms error:", error)
-    return NextResponse.json({ error: "Failed to fetch rooms" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to fetch rooms", detail: error?.message ?? String(error) },
+      { status: 500 }
+    )
   }
 }
 
@@ -35,21 +38,25 @@ export async function POST(req: NextRequest) {
     const { roomNumber, type, pricePerNight, status } = body
 
     const db = await getDb()
-    const result = await db.request()
+    const result = await db
+      .request()
       .input("roomNumber", sql.NVarChar, roomNumber)
       .input("type", sql.NVarChar, type)
       .input("pricePerNight", sql.Decimal(10, 2), pricePerNight)
       .input("status", sql.NVarChar, status || "Available")
       .query(`
-        INSERT INTO hotel.Rooms (roomNumber, type, pricePerNight, status)
+        INSERT INTO [hotel].[Rooms] (roomNumber, type, pricePerNight, status)
         OUTPUT INSERTED.*
         VALUES (@roomNumber, @type, @pricePerNight, @status)
       `)
 
     return NextResponse.json(result.recordset[0], { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error("POST /api/rooms error:", error)
-    return NextResponse.json({ error: "Failed to create room" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to create room", detail: error?.message ?? String(error) },
+      { status: 500 }
+    )
   }
 }
 
@@ -59,11 +66,12 @@ export async function PATCH(req: NextRequest) {
     const { roomId, status } = body
 
     const db = await getDb()
-    const result = await db.request()
+    const result = await db
+      .request()
       .input("roomId", sql.Int, roomId)
       .input("status", sql.NVarChar, status)
       .query(`
-        UPDATE hotel.Rooms SET status = @status
+        UPDATE [hotel].[Rooms] SET status = @status
         OUTPUT INSERTED.*
         WHERE roomId = @roomId
       `)
@@ -73,8 +81,11 @@ export async function PATCH(req: NextRequest) {
     }
 
     return NextResponse.json(result.recordset[0])
-  } catch (error) {
+  } catch (error: any) {
     console.error("PATCH /api/rooms error:", error)
-    return NextResponse.json({ error: "Failed to update room" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to update room", detail: error?.message ?? String(error) },
+      { status: 500 }
+    )
   }
 }

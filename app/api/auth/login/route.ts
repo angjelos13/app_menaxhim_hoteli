@@ -13,8 +13,11 @@ export async function POST(req: NextRequest) {
     const db = await getDb()
     const result = await db.request()
       .input("username", sql.NVarChar, username)
-      .query("SELECT userId, username, passwordHash, role, isActive FROM hotel.Users WHERE username = @username")
-
+      .query(`
+              SELECT userId, username, passwordHash, role, isActive
+              FROM [hotel].[Users]
+              WHERE username = @username
+            `)    
     const user = result.recordset[0]
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
@@ -24,7 +27,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Account is disabled" }, { status: 403 })
     }
 
-    if (!verifyPassword(password, user.passwordHash)) {
+    if (!(await verifyPassword(password, user.passwordHash))) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
@@ -51,8 +54,10 @@ export async function POST(req: NextRequest) {
     })
 
     return response
-  } catch (error) {
-    console.error("Login error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
-  }
+  } catch (error: any) {
+  console.error("Login error:", error)
+  return NextResponse.json(
+    { error: "Internal server error", detail: error?.message ?? String(error) },
+    { status: 500 }
+  )}
 }
