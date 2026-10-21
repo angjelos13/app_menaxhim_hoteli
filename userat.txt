@@ -1,5 +1,0 @@
-user-at
-
-ana.martinez: admin123
-carlos.ruiz: recep123
-pedro.sanchez: oper123
